@@ -8,7 +8,7 @@ BYTECOMP=$(FRONTEND)/bytecomp
 OCB_FLAGS = -cflags -w,-3 \
 	-use-ocamlfind -use-menhir \
 	-I $(SRCROOT)/ -I $(FRONTEND)/ -I $(BACKEND)/ -I $(CHARDECODER)/ -I $(BYTECOMP) \
-	-pkgs "str,ppx_deriving.show,core_kernel,uutf,batteries, \
+	-pkgs "str,ppx_deriving.show,core_kernel,core,uutf,batteries, \
 	menhirLib,yojson,camlimages,camlimages.jpeg,otfm,camlpdf" \
 	-tag bin_annot -tag thread -tag unsafe_string -yaccflags "--table --explain"
 TARGET=satysfi

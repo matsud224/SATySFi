@@ -1,5 +1,6 @@
 
 open MyUtil
+module Bigstring = Core.Bigstring
 
 
 type file_path = string
@@ -32,35 +33,12 @@ let raise_err srcpath oerr s =
   raise (BrokenFont(srcpath, msg ^ "; " ^ s))
 
 
-let string_of_file (srcpath : file_path) : string =
-  let bufsize = 65536 in  (* temporary; size of buffer for loading font format file *)
-  let buf : Buffer.t = Buffer.create bufsize in
-  let byt : bytes = Bytes.create bufsize in
-  let ic =
-    try
-      open_in_bin srcpath
-    with
-    | Sys_error(msg) -> raise (FailToLoadFontOwingToSystem(srcpath, msg))
-  in
-
-  let rec aux () =
-    let c = input ic byt 0 bufsize in
-      if c = 0 then
-        begin
-          close_in ic;
-          Buffer.contents buf
-        end
-      else
-        begin
-          Buffer.add_subbytes buf byt 0 c;
-          aux ()
-        end
-  in
-    try
-      aux ()
-    with
-    | Failure(_)     -> begin close_in ic; raise (FailToLoadFontOwingToSize(srcpath)) end
-    | Sys_error(msg) -> begin close_in ic; raise (FailToLoadFontOwingToSystem(srcpath, msg)) end
+let bigstring_of_file (srcpath : file_path) : Bigstring.t =
+  try
+    let fd = Unix.openfile srcpath [O_RDONLY] 0o600 in
+      Bigstring.map_file false fd (-1)
+  with
+  | Unix.Unix_error(c, f, p) -> raise (FailToLoadFontOwingToSystem(srcpath, f))
 
 
 type cid_system_info = {
@@ -114,17 +92,17 @@ let extract_registration d =
 
 
 let get_main_decoder_single (src : file_path) : ((Otfm.decoder * font_registration) option) ok =
-  let s = string_of_file src in
+  let bs = bigstring_of_file src in
   let open ResultMonad in
-    Otfm.decoder (`String(s)) >>= function
+    Otfm.decoder (`Bigstring(bs)) >>= function
     | Otfm.TrueTypeCollection(_) -> return None
     | Otfm.SingleDecoder(d)      -> extract_registration d
 
 
 let get_main_decoder_ttc (src : file_path) (i : int) : ((Otfm.decoder * font_registration) option) ok =
-  let s = string_of_file src in
+  let bs = bigstring_of_file src in
   let open ResultMonad in
-    Otfm.decoder (`String(s)) >>= function
+    Otfm.decoder (`Bigstring(bs)) >>= function
     | Otfm.SingleDecoder(_) ->
         return None
 
@@ -702,6 +680,7 @@ let pdfstream_of_decoder (pdf : Pdf.t) (dcdr : decoder) (subtypeopt : string opt
           begin
             match Otfm.decoder_src d with
             | `String(s) -> s
+            | `Bigstring(bs) -> Bigstring.to_string bs
           end
 
       | Some(gidorglst) ->
