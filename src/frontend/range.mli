@@ -10,6 +10,10 @@ val message : t -> string
 
 val to_string : t -> string
 
+val to_source : t -> string
+
+val to_underline_string : t -> string
+
 val unite : t -> t -> t
 
 val make : string -> int -> int -> int -> t

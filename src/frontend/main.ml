@@ -107,7 +107,7 @@ let rec register_library_file (dg : file_info FileDependencyGraph.t) (file_path_
     Logging.begin_to_parse_file file_path_in;
     let curdir = Filename.dirname file_path_in in
     let file_in = open_in file_path_in in
-    let (header, utast) = ParserInterface.process (Filename.basename file_path_in) (Lexing.from_channel file_in) in
+    let (header, utast) = ParserInterface.process file_path_in (Lexing.from_channel file_in) in
     FileDependencyGraph.add_vertex dg file_path_in (LibraryFile(utast));
     header |> List.iter (fun headerelem ->
       let file_path_sub = make_absolute_path curdir headerelem in
@@ -204,7 +204,7 @@ let register_document_file (dg : file_info FileDependencyGraph.t) (file_path_in 
     Logging.begin_to_parse_file file_path_in;
     let file_in = open_in file_path_in in
     let curdir = Filename.dirname file_path_in in
-    let (header, utast) = ParserInterface.process (Filename.basename file_path_in) (Lexing.from_channel file_in) in
+    let (header, utast) = ParserInterface.process file_path_in (Lexing.from_channel file_in) in
     FileDependencyGraph.add_vertex dg file_path_in (DocumentFile(utast));
     header |> List.iter (fun headerelem ->
       let file_path_sub = make_absolute_path curdir headerelem in
@@ -465,6 +465,8 @@ let error_log_environment suspended =
       report_error Lexer [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
         NormalLine(s);
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
       ]
 
   | Parsing.Parse_error             -> report_error Parser [ NormalLine("something is wrong."); ]
@@ -473,6 +475,8 @@ let error_log_environment suspended =
   | IllegalArgumentLength(rng, len, lenexp) ->
       report_error Parser [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("this declaration has" ^ (string_of_int len) ^ " argument pattern(s),");
         NormalLine("but is expected to have " ^ (string_of_int lenexp) ^ ".");
       ]
@@ -480,12 +484,16 @@ let error_log_environment suspended =
   | ParserInterface.Error(rng) ->
       report_error Parser [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
       ]
 
   | Typechecker.UndefinedVariable(rng, mdlnmlst, varnm, candidates) ->
       let s = String.concat "." (List.append mdlnmlst [varnm]) in
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("undefined variable '" ^ s ^ "'.");
         NormalLineOption(make_candidates_message candidates);
       ]
@@ -493,6 +501,8 @@ let error_log_environment suspended =
   | Typechecker.UndefinedConstructor(rng, constrnm, candidates) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("undefined constructor '" ^ constrnm ^ "'.");
         NormalLineOption(make_candidates_message candidates);
       ]
@@ -500,6 +510,8 @@ let error_log_environment suspended =
   | Typechecker.TooManyArgument(rngcmdapp, tyenv, tycmd) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rngcmdapp) ^ ":");
+        NormalLine(Range.to_source rngcmdapp);
+        NormalLine(Range.to_underline_string rngcmdapp);
         NormalLine("too many argument(s);");
         NormalLine("the command has type");
         DisplayLine((Display.string_of_mono_type tyenv tycmd) ^ ".")
@@ -508,6 +520,8 @@ let error_log_environment suspended =
   | Typechecker.NeedsMoreArgument(rngcmdapp, tyenv, tycmd, tyreq) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rngcmdapp) ^ ":");
+        NormalLine(Range.to_source rngcmdapp);
+        NormalLine(Range.to_underline_string rngcmdapp);
         NormalLine("needs more mandatory argument(s);");
         NormalLine("the command has type");
         DisplayLine((Display.string_of_mono_type tyenv tycmd) ^ ",");
@@ -519,6 +533,8 @@ let error_log_environment suspended =
   | Typechecker.InvalidOptionalCommandArgument(tyenv, tycmd, rngarg) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rngarg) ^ ":");
+        NormalLine(Range.to_source rngarg);
+        NormalLine(Range.to_underline_string rngarg);
         NormalLine("invalid application of an optional argument;");
         NormalLine("the command has type");
         DisplayLine((Display.string_of_mono_type tyenv tycmd) ^ ".");
@@ -527,24 +543,32 @@ let error_log_environment suspended =
   | Typechecker.UnknownUnitOfLength(rng, unitnm) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("undefined unit of length '" ^ unitnm ^ "'.");
       ]
 
   | Typechecker.HorzCommandInMath(rng) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("an inline command is used as a math command.");
       ]
 
   | Typechecker.MathCommandInHorz(rng) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("a math command is used as an inline command.");
       ]
 
   | Typechecker.BreaksValueRestriction(rng) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("this expression breaks the value restriction;");
         NormalLine("it should be a syntactic function.");
       ]
@@ -552,13 +576,19 @@ let error_log_environment suspended =
   | Typechecker.MultiplePatternVariable(rng1, rng2, varnm) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng1));
+        NormalLine(Range.to_source rng1);
+        NormalLine(Range.to_underline_string rng1);
         NormalLine("and at " ^ (Range.to_string rng2) ^ ":");
+        NormalLine(Range.to_source rng2);
+        NormalLine(Range.to_underline_string rng2);
         NormalLine("pattern variable '" ^ varnm ^ "' is bound more than once.");
       ]
 
   | Typechecker.MultipleFieldInRecord(rng, fldnm) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("this record expression has more than one field for '" ^ fldnm ^ "'.");
       ]
 
@@ -566,6 +596,8 @@ let error_log_environment suspended =
       let strty = string_of_mono_type tyenv ty in
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("this expression has type");
         DisplayLine(strty);
         NormalLine("and thus it cannot be applied to arguments.");
@@ -574,6 +606,8 @@ let error_log_environment suspended =
   | Typeenv.IllegalNumberOfTypeArguments(rng, tynm, lenexp, lenerr) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("'" ^ tynm ^ "' is expected to have " ^ (string_of_int lenexp) ^ " type argument(s),");
         NormalLine("but it has " ^ (string_of_int lenerr) ^ " type argument(s) here.");
       ]
@@ -582,6 +616,8 @@ let error_log_environment suspended =
       let s = String.concat "." (List.append mdlnmlst [tynm]) in
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("undefined type name '" ^ s ^ "'");
         NormalLineOption(make_candidates_message candidates);
       ]
@@ -589,6 +625,8 @@ let error_log_environment suspended =
   | Typeenv.UndefinedModuleName(rng, mdlnm, candidates) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("undefined module name '" ^ mdlnm ^ "'");
         NormalLineOption(make_candidates_message candidates);
       ]
@@ -596,6 +634,8 @@ let error_log_environment suspended =
   | Typeenv.UndefinedTypeArgument(rng, tyargnm, candidates) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("undefined type argument '" ^ tyargnm ^ "'");
         NormalLineOption(make_candidates_message candidates);
       ]
@@ -610,12 +650,18 @@ let error_log_environment suspended =
       report_error Typechecker [
         NormalLine("parallel type definition by the same name:");
         DisplayLine(tynm ^ " (at " ^ (Range.to_string rng1) ^ ")");
+        NormalLine(Range.to_source rng1);
+        NormalLine(Range.to_underline_string rng1);
         DisplayLine(tynm ^ " (at " ^ (Range.to_string rng2) ^ ")");
+        NormalLine(Range.to_source rng2);
+        NormalLine(Range.to_underline_string rng2);
       ]
 
   | Typeenv.NotProvidingTypeImplementation(rng, tynm) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("The implementation does not provide type '" ^ tynm ^ "',");
         NormalLine("which is required by the signature.");
       ]
@@ -623,6 +669,8 @@ let error_log_environment suspended =
   | Typeenv.NotProvidingValueImplementation(rng, varnm) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("The implementation does not provide value '" ^ varnm ^ "',");
         NormalLine("which is required by the signature.");
       ]
@@ -630,6 +678,8 @@ let error_log_environment suspended =
   | Typeenv.NotMatchingInterface(rng, varnm, tyenv1, pty1, tyenv2, pty2) ->
       report_error Typechecker [
         NormalLine("at " ^ (Range.to_string rng) ^ ":");
+        NormalLine(Range.to_source rng);
+        NormalLine(Range.to_underline_string rng);
         NormalLine("The implementation of value '" ^ varnm ^ "' has type");
         DisplayLine(Display.string_of_poly_type tyenv1 pty1);
         NormalLine("which is inconsistent with the type required by the signature");
@@ -643,19 +693,38 @@ let error_log_environment suspended =
       let strrng2 = Range.to_string rng2 in
       let (posmsg, strtyA, strtyB, additional) =
         match (Range.is_dummy rng1, Range.is_dummy rng2) with
-        | (true, true)   -> ("(cannot report position; '" ^ (Range.message rng1) ^ "', '" ^ (Range.message rng2) ^ "')", strty1, strty2, [])
-        | (true, false)  -> ("at " ^ strrng2 ^ ":", strty2, strty1, [])
-        | (false, true)  -> ("at " ^ strrng1 ^ ":", strty1, strty2, [])
-        | (false, false) -> ("at " ^ strrng1 ^ ":", strty1, strty2, [ NormalLine("This constraint is required by the expression");
-                                                                      NormalLine("at " ^ strrng2 ^ "."); ])
+        | (true, true)   ->
+            ([NormalLine("(cannot report position; '" ^ (Range.message rng1) ^ "', '" ^ (Range.message rng2) ^ "')")], strty1, strty2, [])
+        | (true, false)  ->
+            ([
+              NormalLine("at " ^ strrng2 ^ ":");
+              NormalLine(Range.to_source rng2);
+              NormalLine(Range.to_underline_string rng2);
+            ], strty2, strty1, [])
+        | (false, true)  ->
+            ([
+              NormalLine("at " ^ strrng1 ^ ":");
+              NormalLine(Range.to_source rng1);
+              NormalLine(Range.to_underline_string rng1);
+            ], strty1, strty2, [])
+        | (false, false) ->
+            ([
+              NormalLine("at " ^ strrng1 ^ ":");
+              NormalLine(Range.to_source rng1);
+              NormalLine(Range.to_underline_string rng1);
+            ], strty1, strty2, [
+              NormalLine("This constraint is required by the expression");
+              NormalLine("at " ^ strrng2 ^ ".");
+              NormalLine(Range.to_source rng2);
+              NormalLine(Range.to_underline_string rng2);
+            ])
       in
-        report_error Typechecker (List.append [
-          NormalLine(posmsg);
+        report_error Typechecker (posmsg @ [
           NormalLine("this expression has type");
           DisplayLine(strtyA ^ ",");
           NormalLine("but is expected of type");
           DisplayLine(strtyB ^ ".");
-        ] additional)
+        ] @ additional)
 
   | Typechecker.InclusionError(tyenv, ((rng1, _) as ty1), ((rng2, _) as ty2)) ->
       let strty1 = string_of_mono_type tyenv ty1 in
