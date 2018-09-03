@@ -46,28 +46,45 @@ let make_underline start len =
     (String.make start ' ') ^ "^" ^ (String.make len '~')
 
 
-let to_source rng =
+let read_source rng =
   match rng with
   | Dummy(msg) -> ""
   | Normal(fname, ln1, pos1, ln2, pos2) ->
     let f = open_in fname in
-      if ln1 = ln2 then
-        let () = skip_lines f (ln1-1) in
-        let line = input_line f in
-        let () = close_in f in
-          line
-      else
-         ""
+    let ln = max ln1 1 in
+      let () = skip_lines f (ln - 1) in
+      let line = input_line f in
+      let () = close_in f in
+        line
+
+
+let to_source rng =
+  String.trim (read_source rng)
+
+
+let is_whitespace c =
+  (c = ' ' || c = '\t')
+
+
+let lspaces str =
+  let rec iter str i cnt =
+    if is_whitespace (String.get str i) then
+      iter str (i + 1) (cnt + 1)
+    else
+      cnt
+  in
+    iter str 0 0
 
 
 let to_underline_string rng =
   match rng with
   | Dummy(msg) -> ""
   | Normal(fname, ln1, pos1, ln2, pos2) ->
-    if ln1 = ln2 then
-      make_underline pos1 (pos2 - pos1)
-    else
-      ""
+    let lsp = lspaces (read_source rng) in
+      if ln1 = ln2 then
+        make_underline (pos1 - lsp) (pos2 - pos1)
+      else
+        make_underline (pos1 - lsp) 0
 
 
 let unite rng1 rng2 =
