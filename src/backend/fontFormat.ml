@@ -1918,8 +1918,30 @@ let make_dictionary (pdf : Pdf.t) (font : font) (dcdr : decoder) : Pdf.pdfobject
   | Type0(ty0font) -> Type0.to_pdfdict pdf ty0font dcdr
 
 
+type embedding_permission =
+  | Allowed
+  | AllowedWithoutSubsetting
+  | NotAllowed
+
+
+let check_embedding_permission fs_type =
+  if fs_type land 0x0002 <> 0 then
+    NotAllowed
+  else if fs_type land 0x0100 <> 0 then
+    AllowedWithoutSubsetting
+  else if fs_type land 0x0200 <> 0 then
+    NotAllowed
+  else
+    Allowed
+
+
 let make_decoder (abspath : abs_path) (d : Otfm.decoder) : decoder =
   let cmapsubtbl = get_cmap_subtable abspath d in
+  let embed_perm =
+    match Otfm.os2 d with
+    | Error(e)   -> broken abspath e "make_decoder (os/2)"
+    | Ok(rcdos2) -> check_embedding_permission rcdos2.Otfm.os2_fs_type
+  in
   let submap =
     match Otfm.flavour d with
     | Error(e)                        -> broken abspath e "make_decoder (flavour)"
