@@ -175,13 +175,13 @@ let warn_duplicate_math_font_hash mfabbrev relpath =
 
 let warn_restricted_font_embedding abspath =
   if OptionState.ignore_font_license () then
-    Format.printf " [Warning] Font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" (get_abs_path_string abspath)
+    Format.printf "  [Warning] Font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" (get_abs_path_string abspath)
   else
-    Format.printf " [Warning] Font `%s` will not be embedded due to license restriction. \n" (get_abs_path_string abspath)
+    Format.printf "  [Warning] Font `%s` will not be embedded due to license restriction. \n" (get_abs_path_string abspath)
 
 
 let warn_restricted_font_subsetting abspath =
   if OptionState.ignore_font_license () then
-    Format.printf " [Warning] Font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" (get_abs_path_string abspath)
+    Format.printf "  [Warning] Font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" (get_abs_path_string abspath)
   else
-    Format.printf " [Warning] Font `%s` will not be subsetted due to license restriction." (get_abs_path_string abspath)
+    Format.printf "  [Warning] Font `%s` will not be subsetted due to license restriction." (get_abs_path_string abspath)
