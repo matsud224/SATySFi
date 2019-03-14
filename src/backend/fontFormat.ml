@@ -1942,6 +1942,18 @@ let make_decoder (abspath : abs_path) (d : Otfm.decoder) : decoder =
     | Error(e)   -> broken abspath e "make_decoder (os/2)"
     | Ok(rcdos2) -> check_embedding_permission rcdos2.Otfm.os2_fs_type
   in
+  begin
+    match embed_perm with
+    | Allowed                  -> ()
+    | AllowedWithoutSubsetting -> Logging.warn_restricted_font_subsetting abspath
+    | NotAllowed               -> Logging.warn_restricted_font_embedding abspath
+  end;
+  let embed_perm =
+    if OptionState.ignore_font_license () then
+      Allowed
+    else
+      embed_perm
+  in
   let submap =
     match Otfm.flavour d with
     | Error(e)                        -> broken abspath e "make_decoder (flavour)"
