@@ -938,22 +938,23 @@ let arg_config s =
 
 let arg_spec_list curdir =
   [
-    ("-o"                , Arg.String(arg_output curdir)             , " Specify output file"                                   );
-    ("--output"          , Arg.String(arg_output curdir)             , " Specify output file"                                   );
-    ("-v"                , Arg.Unit(arg_version)                     , " Prints version"                                        );
-    ("--version"         , Arg.Unit(arg_version)                     , " Prints version"                                        );
-    ("--full-path"       , Arg.Unit(OptionState.set_show_full_path)  , " Displays paths in full-path style"                     );
-    ("--debug-show-bbox" , Arg.Unit(OptionState.set_debug_show_bbox) , " Outputs bounding boxes for glyphs"                     );
-    ("--debug-show-space", Arg.Unit(OptionState.set_debug_show_space), " Outputs boxes for spaces"                              );
-    ("-t"                , Arg.Unit(OptionState.set_type_check_only) , " Stops after type checking"                             );
-    ("--type-check-only" , Arg.Unit(OptionState.set_type_check_only) , " Stops after type checking"                             );
-    ("-b"                , Arg.Unit(OptionState.set_bytecomp_mode)   , " Use bytecode compiler"                                 );
-    ("--bytecomp"        , Arg.Unit(OptionState.set_bytecomp_mode)   , " Use bytecode compiler"                                 );
-    ("--text-mode"       , Arg.String(text_mode)                     , " Set text mode"                                         );
-    ("--markdown"        , Arg.String(input_markdown)                , " Pass Markdown source as input"                         );
-    ("--show-fonts"      , Arg.Unit(OptionState.set_show_fonts)      , " Displays all the available fonts"                      );
-    ("-C"                , Arg.String(arg_config)                    , " Add colon-separated paths to configuration search path");
-    ("--config"          , Arg.String(arg_config)                    , " Add colon-separated paths to configuration search path");
+    ("-o"                   , Arg.String(arg_output curdir)             , " Specify output file"                                   );
+    ("--output"             , Arg.String(arg_output curdir)             , " Specify output file"                                   );
+    ("-v"                   , Arg.Unit(arg_version)                     , " Prints version"                                        );
+    ("--version"            , Arg.Unit(arg_version)                     , " Prints version"                                        );
+    ("--full-path"          , Arg.Unit(OptionState.set_show_full_path)  , " Displays paths in full-path style"                     );
+    ("--debug-show-bbox"    , Arg.Unit(OptionState.set_debug_show_bbox) , " Outputs bounding boxes for glyphs"                     );
+    ("--debug-show-space"   , Arg.Unit(OptionState.set_debug_show_space), " Outputs boxes for spaces"                              );
+    ("-t"                   , Arg.Unit(OptionState.set_type_check_only) , " Stops after type checking"                             );
+    ("--type-check-only"    , Arg.Unit(OptionState.set_type_check_only) , " Stops after type checking"                             );
+    ("-b"                   , Arg.Unit(OptionState.set_bytecomp_mode)   , " Use bytecode compiler"                                 );
+    ("--bytecomp"           , Arg.Unit(OptionState.set_bytecomp_mode)   , " Use bytecode compiler"                                 );
+    ("--text-mode"          , Arg.String(text_mode)                     , " Set text mode"                                         );
+    ("--markdown"           , Arg.String(input_markdown)                , " Pass Markdown source as input"                         );
+    ("--show-fonts"         , Arg.Unit(OptionState.set_show_fonts)      , " Displays all the available fonts"                      );
+    ("-C"                   , Arg.String(arg_config)                    , " Add colon-separated paths to configuration search path");
+    ("--config"             , Arg.String(arg_config)                    , " Add colon-separated paths to configuration search path");
+    ("--ignore-font-license", Arg.Unit(OptionState.set_ignore_font_license) , " Ignore font licensing flags and always embed fonts");
   ]
 
 

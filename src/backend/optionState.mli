@@ -40,3 +40,6 @@ val is_text_mode : unit -> bool
 
 val set_extra_config_paths : string list -> unit
 val get_extra_config_paths : unit -> string list option
+
+val set_ignore_font_license : unit -> unit
+val ignore_font_license     : unit -> bool

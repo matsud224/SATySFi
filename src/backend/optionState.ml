@@ -17,6 +17,7 @@ type state = {
   mutable debug_show_space : bool;
   mutable mode             : (string list) option;
   mutable extra_config_paths : string list option;
+  mutable ignore_font_license : bool;
 }
 
 
@@ -32,6 +33,7 @@ let state = {
   debug_show_space = false;
   mode             = None;
   extra_config_paths = None;
+  ignore_font_license = false;
 }
 
 let set_input_kind ikd = state.input_kind <- ikd
@@ -75,3 +77,7 @@ let is_text_mode () =
 
 let set_extra_config_paths lst = state.extra_config_paths <- Some(lst)
 let get_extra_config_paths () = state.extra_config_paths
+
+
+let set_ignore_font_license () = state.ignore_font_license <- true
+let ignore_font_license ()     = state.ignore_font_license
