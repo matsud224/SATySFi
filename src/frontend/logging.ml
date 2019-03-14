@@ -173,15 +173,29 @@ let warn_duplicate_math_font_hash mfabbrev relpath =
   Format.printf "  [Warning] more than one font is named `%s`; '%s' will be associated with the font name.\n" mfabbrev (get_lib_path_string relpath)
 
 
-let warn_restricted_font_embedding abspath =
+let warn_restricted_font_embedding abbrev =
   if OptionState.ignore_font_license () then
-    Format.printf "  [Warning] Font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" (get_abs_path_string abspath)
+    Format.printf "  [Warning] Font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" abbrev
   else
-    Format.printf "  [Warning] Font `%s` will not be embedded due to license restriction. \n" (get_abs_path_string abspath)
+    Format.printf "  [Warning] Font `%s` will not be embedded due to license restriction. \n" abbrev
 
 
-let warn_restricted_font_subsetting abspath =
+let warn_restricted_math_font_embedding mfabbrev =
   if OptionState.ignore_font_license () then
-    Format.printf "  [Warning] Font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" (get_abs_path_string abspath)
+    Format.printf "  [Warning] Math font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" mfabbrev
   else
-    Format.printf "  [Warning] Font `%s` will not be subsetted due to license restriction." (get_abs_path_string abspath)
+    Format.printf "  [Warning] Math font `%s` will not be embedded due to license restriction. \n" mfabbrev
+
+
+let warn_restricted_font_subsetting abbrev =
+  if OptionState.ignore_font_license () then
+    Format.printf "  [Warning] Font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" abbrev
+  else
+    Format.printf "  [Warning] Font `%s` will not be subsetted due to license restriction." abbrev
+
+
+let warn_restricted_math_font_subsetting mfabbrev =
+  if OptionState.ignore_font_license () then
+    Format.printf "  [Warning] Math font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" mfabbrev
+  else
+    Format.printf "  [Warning] Math font `%s` will not be subsetted due to license restriction." mfabbrev

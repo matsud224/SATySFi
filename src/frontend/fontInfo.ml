@@ -86,6 +86,16 @@ module FontAbbrevHashTable
       ) abbrev_to_definition_hash_table init
 
 
+    let warn_about_font_license abbrev embed_perm =
+      match embed_perm with
+      | FontFormat.Allowed                  ->
+          ()
+      | FontFormat.AllowedWithoutSubsetting ->
+          Logging.warn_restricted_font_subsetting abbrev
+      | FontFormat.NotAllowed               ->
+          Logging.warn_restricted_font_embedding abbrev
+
+
     let find (abbrev : font_abbrev) : font_definition =
       match Ht.find_opt abbrev_to_definition_hash_table abbrev with
       | None ->
@@ -110,6 +120,7 @@ module FontAbbrevHashTable
                       let tag = generate_tag () in
                       let dfn = { font_tag = tag; font = font; decoder = dcdr; } in
                       storeref := Loaded(dfn);
+                      warn_about_font_license abbrev (FontFormat.get_font_embedding_permission dcdr);
                       dfn
                 end
 
@@ -125,6 +136,7 @@ module FontAbbrevHashTable
                       let tag = generate_tag () in
                       let dfn = { font_tag = tag; font = font; decoder = dcdr; } in
                       storeref := Loaded(dfn);
+                      warn_about_font_license abbrev (FontFormat.get_font_embedding_permission dcdr);
                       dfn
                 end
           end
@@ -268,6 +280,16 @@ module MathFontAbbrevHashTable
       ) abbrev_to_definition_hash_table init
 
 
+    let warn_about_math_font_license mfabbrev embed_perm =
+      match embed_perm with
+      | FontFormat.Allowed                  ->
+          ()
+      | FontFormat.AllowedWithoutSubsetting ->
+          Logging.warn_restricted_math_font_subsetting mfabbrev
+      | FontFormat.NotAllowed               ->
+          Logging.warn_restricted_math_font_embedding mfabbrev
+
+
     let find (mfabbrev : math_font_abbrev) : math_font_definition =
       match Ht.find_opt abbrev_to_definition_hash_table mfabbrev with
       | None ->
@@ -289,6 +311,7 @@ module MathFontAbbrevHashTable
                       let tag = generate_tag () in
                       let mfdfn = { math_font_tag = tag; math_font = font; math_decoder = md; } in
                       storeref := LoadedMath(mfdfn);
+                      warn_about_math_font_license mfabbrev (FontFormat.get_math_font_embedding_permission md);
                       mfdfn
                 end
 

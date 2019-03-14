@@ -1021,22 +1021,29 @@ let get_kerning_table srcpath (d : Otfm.decoder) =
       end
 
 
+type embedding_permission =
+  | Allowed
+  | AllowedWithoutSubsetting
+  | NotAllowed
+
+
 type decoder = {
-  file_path           : abs_path;
-  main                : Otfm.decoder;
-  cmap_subtable       : Otfm.cmap_subtable;
-  head_record         : Otfm.head;
-  hhea_record         : Otfm.hhea;
-  subset_map          : subset_map;
-  glyph_id_table      : GlyphIDTable.t;
-  glyph_bbox_table    : GlyphBBoxTable.t;
-  kerning_table       : KerningTable.t;
-  ligature_table      : LigatureTable.t;
-  mark_table          : MarkTable.t;
-  charstring_info     : Otfm.charstring_info option;
-  units_per_em        : int;
-  default_ascent      : per_mille;
-  default_descent     : per_mille;
+  file_path            : abs_path;
+  main                 : Otfm.decoder;
+  cmap_subtable        : Otfm.cmap_subtable;
+  head_record          : Otfm.head;
+  hhea_record          : Otfm.hhea;
+  subset_map           : subset_map;
+  glyph_id_table       : GlyphIDTable.t;
+  glyph_bbox_table     : GlyphBBoxTable.t;
+  kerning_table        : KerningTable.t;
+  ligature_table       : LigatureTable.t;
+  mark_table           : MarkTable.t;
+  charstring_info      : Otfm.charstring_info option;
+  units_per_em         : int;
+  default_ascent       : per_mille;
+  default_descent      : per_mille;
+  embedding_permission : embedding_permission;
 }
 
 
@@ -1405,6 +1412,11 @@ let get_glyph_raw_contour_list_and_bounding_box (dcdr : decoder) (gidorg : origi
       | (`Simple(precntrlst), bbox) -> return (Some((precntrlst, bbox)))
 *)
 
+
+let get_font_embedding_permission decoder =
+  decoder.embedding_permission
+
+
 let of_per_mille = function
   | PerMille(x) -> Pdf.Integer(x)
 
@@ -1720,11 +1732,17 @@ module Type0
 
 
     let pdfobject_of_font_descriptor (pdf : Pdf.t) (dcdr : decoder) fontdescr base_font embedding : Pdf.pdfobject =
-      let (font_file_key, tagopt) = font_file_info_of_embedding embedding in
-      let objstream = pdfstream_of_decoder pdf dcdr tagopt in
-        (* -- add to the PDF the stream in which the font file is embedded -- *)
+      let font_file_entry =
+        if (not (OptionState.ignore_font_license ())) && (dcdr.embedding_permission = NotAllowed) then
+          []
+        else
+          let (font_file_key, tagopt) = font_file_info_of_embedding embedding in
+          let objstream = pdfstream_of_decoder pdf dcdr tagopt in
+          [(font_file_key, objstream)]
+            (* -- add to the PDF the stream in which the font file is embedded -- *)
+      in
       let objdescr =
-        Pdf.Dictionary[
+        let base_entries = [
           ("/Type"       , Pdf.Name("/FontDescriptor"));
           ("/FontName"   , Pdf.Name("/" ^ base_font));
           ("/Flags"      , Pdf.Integer(4));  (* temporary; should be variable *)
@@ -1733,8 +1751,9 @@ module Type0
           ("/Ascent"     , of_per_mille fontdescr.ascent);
           ("/Descent"    , of_per_mille fontdescr.descent);
           ("/StemV"      , Pdf.Real(fontdescr.stemv));
-          (font_file_key , objstream);
         ]
+        in
+        Pdf.Dictionary (base_entries @ font_file_entry)
       in
       let irdescr = Pdf.addobj pdf objdescr in
       Pdf.Indirect(irdescr)
@@ -1918,12 +1937,6 @@ let make_dictionary (pdf : Pdf.t) (font : font) (dcdr : decoder) : Pdf.pdfobject
   | Type0(ty0font) -> Type0.to_pdfdict pdf ty0font dcdr
 
 
-type embedding_permission =
-  | Allowed
-  | AllowedWithoutSubsetting
-  | NotAllowed
-
-
 let check_embedding_permission fs_type =
   if fs_type land 0x0002 <> 0 then
     NotAllowed
@@ -1942,23 +1955,13 @@ let make_decoder (abspath : abs_path) (d : Otfm.decoder) : decoder =
     | Error(e)   -> broken abspath e "make_decoder (os/2)"
     | Ok(rcdos2) -> check_embedding_permission rcdos2.Otfm.os2_fs_type
   in
-  begin
-    match embed_perm with
-    | Allowed                  -> ()
-    | AllowedWithoutSubsetting -> Logging.warn_restricted_font_subsetting abspath
-    | NotAllowed               -> Logging.warn_restricted_font_embedding abspath
-  end;
-  let embed_perm =
-    if OptionState.ignore_font_license () then
-      Allowed
-    else
-      embed_perm
-  in
   let submap =
-    match Otfm.flavour d with
-    | Error(e)                        -> broken abspath e "make_decoder (flavour)"
-    | Ok(Otfm.TTF_true | Otfm.TTF_OT) -> SubsetMap.create 32  (* temporary; initial size of hash tables *)
-    | Ok(Otfm.CFF)                    -> SubsetMap.create_dummy ()
+    let embed_perm = if OptionState.ignore_font_license () then Allowed else embed_perm in
+    match (Otfm.flavour d, embed_perm) with
+    | (Error(e), _)                                    -> broken abspath e "make_decoder (flavour)"
+    | (Ok(_), (AllowedWithoutSubsetting | NotAllowed)) -> SubsetMap.create_dummy ()
+    | (Ok(Otfm.TTF_true | Otfm.TTF_OT), Allowed)       -> SubsetMap.create 32  (* temporary; initial size of hash tables *)
+    | (Ok(Otfm.CFF), Allowed)                          -> SubsetMap.create_dummy ()
   in
   let gidtbl = GlyphIDTable.create submap 256 in  (* temporary; initial size of hash tables *)
   let bboxtbl = GlyphBBoxTable.create 256 in  (* temporary; initial size of hash tables *)
@@ -1982,21 +1985,22 @@ let make_decoder (abspath : abs_path) (d : Otfm.decoder) : decoder =
     | Ok(Some(cffinfo)) -> Some(cffinfo.Otfm.charstring_info)
   in
     {
-      file_path           = abspath;
-      main                = d;
-      cmap_subtable       = cmapsubtbl;
-      head_record         = rcdhead;
-      hhea_record         = rcdhhea;
-      kerning_table       = kerntbl;
-      ligature_table      = ligtbl;
-      mark_table          = mktbl;
-      subset_map          = submap;
-      glyph_id_table      = gidtbl;
-      glyph_bbox_table    = bboxtbl;
-      charstring_info     = csinfo;
-      units_per_em        = units_per_em;
-      default_ascent      = per_mille_raw units_per_em ascent;
-      default_descent     = per_mille_raw units_per_em descent;
+      file_path            = abspath;
+      main                 = d;
+      cmap_subtable        = cmapsubtbl;
+      head_record          = rcdhead;
+      hhea_record          = rcdhhea;
+      kerning_table        = kerntbl;
+      ligature_table       = ligtbl;
+      mark_table           = mktbl;
+      subset_map           = submap;
+      glyph_id_table       = gidtbl;
+      glyph_bbox_table     = bboxtbl;
+      charstring_info      = csinfo;
+      units_per_em         = units_per_em;
+      default_ascent       = per_mille_raw units_per_em ascent;
+      default_descent      = per_mille_raw units_per_em descent;
+      embedding_permission = embed_perm;
     }
 
 
@@ -2293,6 +2297,10 @@ let get_math_vertical_variants (md : math_decoder) (gid : glyph_id) : (glyph_id 
 let get_math_horizontal_variants (md : math_decoder) (gid : glyph_id) =
   let mhorzvarmap = md.math_horizontal_variants in
   mhorzvarmap |> get_math_variants md gid
+
+
+let get_math_font_embedding_permission md =
+  md.as_normal_font.embedding_permission
 
 
 type math_constants =

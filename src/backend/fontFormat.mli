@@ -19,6 +19,11 @@ type metrics = per_mille * per_mille * per_mille
 
 val hex_of_glyph_id : glyph_id -> string
 
+type embedding_permission =
+  | Allowed
+  | AllowedWithoutSubsetting
+  | NotAllowed
+
 type decoder
 
 exception FailToLoadFontOwingToSystem of abs_path * string
@@ -46,6 +51,8 @@ val get_decoder_ttc : string -> abs_path -> int -> (decoder * font) option
 val get_glyph_metrics : decoder -> glyph_id -> metrics
 
 val get_glyph_id : decoder -> Uchar.t -> glyph_id option
+
+val get_font_embedding_permission : decoder -> embedding_permission
 
 val convert_to_ligatures : decoder -> glyph_segment list -> glyph_synthesis list
 
@@ -78,6 +85,8 @@ val get_math_correction_metrics : math_decoder -> glyph_id -> per_mille option *
 val get_math_vertical_variants : math_decoder -> glyph_id -> (glyph_id * float) list
 
 val get_math_horizontal_variants : math_decoder -> glyph_id -> (glyph_id * float) list
+
+val get_math_font_embedding_permission : math_decoder -> embedding_permission
 
 type math_constants =
   {
