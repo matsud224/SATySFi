@@ -175,27 +175,27 @@ let warn_duplicate_math_font_hash mfabbrev relpath =
 
 let warn_restricted_font_embedding abbrev =
   if OptionState.ignore_font_license () then
-    Format.printf "  [Warning] Font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" abbrev
+    Format.printf "  [Warning] Font `%s` cannot be embedded due to license restrictions, but forces embedding.\n" abbrev
   else
-    Format.printf "  [Warning] Font `%s` will not be embedded due to license restriction. \n" abbrev
+    Format.printf "  [Warning] Font `%s` will not be embedded due to license restrictions.\n" abbrev
 
 
 let warn_restricted_math_font_embedding mfabbrev =
   if OptionState.ignore_font_license () then
-    Format.printf "  [Warning] Math font `%s` cannot be embedded due to license restriction, but ignore it. (--ignore-font-license)\n" mfabbrev
+    Format.printf "  [Warning] Math font `%s` cannot be embedded due to license restrictions, but forces embedding.\n" mfabbrev
   else
-    Format.printf "  [Warning] Math font `%s` will not be embedded due to license restriction. \n" mfabbrev
+    Format.printf "  [Warning] Math font `%s` will not be embedded due to license restrictions.\n" mfabbrev
 
 
 let warn_restricted_font_subsetting abbrev =
   if OptionState.ignore_font_license () then
-    Format.printf "  [Warning] Font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" abbrev
+    Format.printf "  [Warning] Font `%s` cannot be subsetted due to license restrictions, but forces subsetting.\n" abbrev
   else
-    Format.printf "  [Warning] Font `%s` will not be subsetted due to license restriction." abbrev
+    Format.printf "  [Warning] Font `%s` will not be subsetted due to license restrictions.\n" abbrev
 
 
 let warn_restricted_math_font_subsetting mfabbrev =
   if OptionState.ignore_font_license () then
-    Format.printf "  [Warning] Math font `%s` cannot be subsetted due to license restriction, but ignore it. (--ignore-font-license)\n" mfabbrev
+    Format.printf "  [Warning] Math font `%s` cannot be subsetted due to license restrictions, but forces subsetting.\n" mfabbrev
   else
-    Format.printf "  [Warning] Math font `%s` will not be subsetted due to license restriction." mfabbrev
+    Format.printf "  [Warning] Math font `%s` will not be subsetted due to license restrictions.\n" mfabbrev
