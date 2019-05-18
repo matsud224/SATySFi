@@ -1028,21 +1028,21 @@ type embedding_permission =
 
 
 type decoder = {
-  file_path            : abs_path;
-  main                 : Otfm.decoder;
-  cmap_subtable        : Otfm.cmap_subtable;
-  head_record          : Otfm.head;
-  hhea_record          : Otfm.hhea;
-  subset_map           : subset_map;
-  glyph_id_table       : GlyphIDTable.t;
-  glyph_bbox_table     : GlyphBBoxTable.t;
-  kerning_table        : KerningTable.t;
-  ligature_table       : LigatureTable.t;
-  mark_table           : MarkTable.t;
-  charstring_info      : Otfm.charstring_info option;
-  units_per_em         : int;
-  default_ascent       : per_mille;
-  default_descent      : per_mille;
+  file_path           : abs_path;
+  main                : Otfm.decoder;
+  cmap_subtable       : Otfm.cmap_subtable;
+  head_record         : Otfm.head;
+  hhea_record         : Otfm.hhea;
+  subset_map          : subset_map;
+  glyph_id_table      : GlyphIDTable.t;
+  glyph_bbox_table    : GlyphBBoxTable.t;
+  kerning_table       : KerningTable.t;
+  ligature_table      : LigatureTable.t;
+  mark_table          : MarkTable.t;
+  cff_info            : Otfm.cff_info option;
+  units_per_em        : int;
+  default_ascent      : per_mille;
+  default_descent     : per_mille;
   embedding_permission : embedding_permission;
 }
 
@@ -1110,15 +1110,15 @@ let get_glyph_advance_width (dcdr : decoder) (gidorgkey : original_glyph_id) : p
 
 
 let get_bbox (dcdr : decoder) (gidorg : original_glyph_id) : bbox =
-  match dcdr.charstring_info with
+  match dcdr.cff_info with
   | None ->
     (* -- if the font is TrueType OT -- *)
       get_ttf_bbox dcdr gidorg
 
-  | Some(csinfo) ->
+  | Some(cffinfo) ->
     (* -- if the font is CFF OT -- *)
       begin
-        match Otfm.charstring_absolute csinfo gidorg with
+        match Otfm.charstring_absolute cffinfo.Otfm.charstring_info gidorg with
         | Error(oerr) ->
             broken dcdr.file_path oerr (Printf.sprintf "get_bbox (gid = %d)" gidorg)
 
@@ -1268,7 +1268,7 @@ let pdfstream_of_decoder (pdf : Pdf.t) (dcdr : decoder) (subtypeopt : string opt
 
       | Some(gidorglst) ->
           begin
-            match OtfSubset.make d gidorglst with
+            match OtfSubset.make d dcdr.cff_info gidorglst with
             | Error(e)    -> broken dcdr.file_path e "pdfstream_of_decoder"
             | Ok(None)    -> assert false
             | Ok(Some(s)) -> s
@@ -1961,7 +1961,7 @@ let make_decoder (abspath : abs_path) (d : Otfm.decoder) : decoder =
     | (Error(e), _)                                    -> broken abspath e "make_decoder (flavour)"
     | (Ok(_), (AllowedWithoutSubsetting | NotAllowed)) -> SubsetMap.create_dummy ()
     | (Ok(Otfm.TTF_true | Otfm.TTF_OT), Allowed)       -> SubsetMap.create 32  (* temporary; initial size of hash tables *)
-    | (Ok(Otfm.CFF), Allowed)                          -> SubsetMap.create_dummy ()
+    | (Ok(Otfm.CFF), Allowed)                          -> SubsetMap.create 32  (* temporary; initial size of hash tables *)
   in
   let gidtbl = GlyphIDTable.create submap 256 in  (* temporary; initial size of hash tables *)
   let bboxtbl = GlyphBBoxTable.create 256 in  (* temporary; initial size of hash tables *)
@@ -1978,28 +1978,28 @@ let make_decoder (abspath : abs_path) (d : Otfm.decoder) : decoder =
   let kerntbl = get_kerning_table abspath d in
   let ligtbl = get_ligature_table abspath submap d in
   let mktbl = get_mark_table abspath units_per_em d in
-  let csinfo =
+  let cffinfo =
     match Otfm.cff d with
     | Error(e)          -> broken abspath e "make_decoder (cff)"
     | Ok(None)          -> None
-    | Ok(Some(cffinfo)) -> Some(cffinfo.Otfm.charstring_info)
+    | Ok(Some(cffinfo)) -> Some(cffinfo)
   in
     {
-      file_path            = abspath;
-      main                 = d;
-      cmap_subtable        = cmapsubtbl;
-      head_record          = rcdhead;
-      hhea_record          = rcdhhea;
-      kerning_table        = kerntbl;
-      ligature_table       = ligtbl;
-      mark_table           = mktbl;
-      subset_map           = submap;
-      glyph_id_table       = gidtbl;
-      glyph_bbox_table     = bboxtbl;
-      charstring_info      = csinfo;
-      units_per_em         = units_per_em;
-      default_ascent       = per_mille_raw units_per_em ascent;
-      default_descent      = per_mille_raw units_per_em descent;
+      file_path           = abspath;
+      main                = d;
+      cmap_subtable       = cmapsubtbl;
+      head_record         = rcdhead;
+      hhea_record         = rcdhhea;
+      kerning_table       = kerntbl;
+      ligature_table      = ligtbl;
+      mark_table          = mktbl;
+      subset_map          = submap;
+      glyph_id_table      = gidtbl;
+      glyph_bbox_table    = bboxtbl;
+      cff_info            = cffinfo;
+      units_per_em        = units_per_em;
+      default_ascent      = per_mille_raw units_per_em ascent;
+      default_descent     = per_mille_raw units_per_em descent;
       embedding_permission = embed_perm;
     }
 
